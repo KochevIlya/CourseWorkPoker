@@ -1,4 +1,5 @@
 from .poker_hands import *
+from Utils import *
 
 ACTIONS = ['fold', 'call', 'raise']
 RAISE_AMOUNT = 10  # Фиксированная сумма рейза
@@ -200,12 +201,11 @@ def betting_round(players, minimum_bet, pot, cards, starting_player_idx=0,):
 
     # Сбросить флаг, кто последний повысил
     
-
+    out_stack = 0
     while True:
-        num_active = sum(p.in_hand for p in players)
-        if num_active <= 1:
+        if active_players - out_stack == 1:
             break
-
+        
         all_bets = [p.bet for p in players if p.in_hand]
         max_bet = max(all_bets) if all_bets else 0
 
@@ -213,10 +213,14 @@ def betting_round(players, minimum_bet, pot, cards, starting_player_idx=0,):
 
         # Круг по игрокам, начиная с starting_player_idx
         for offset in range(num_players):
-            if active_players == 1:
+            print(actions)
+            
+            if active_players - out_stack == 1:
                 break
+            
             i = (starting_player_idx + offset) % num_players
             player = players[i]
+            
             if not player.in_hand:
                 continue
 
@@ -262,7 +266,8 @@ def betting_round(players, minimum_bet, pot, cards, starting_player_idx=0,):
                     p.acted_this_round = False
                 player.acted_this_round = True
 
-
+            if player.stack < 10:
+                    out_stack += 1
         # Если acted_count == количеству оставшихся — все сравняли ставки
         if all(p.bet == max_bet or not p.in_hand for p in players):
             break

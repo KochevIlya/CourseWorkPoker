@@ -50,11 +50,11 @@ game = 0
 players = [
     SimpleGeneticBot([1, 0, 0.5], name="Bot_A"),
     SimpleGeneticBot([0.8, 0.8, 0.3], name="Bot_B"),
-    # SimpleGeneticBot([0.6, 0.5, 0.2], name="Bot_C"),
-    # SimpleGeneticBot([0.6, 0.7, 0.2], name="Bot_G"),
-    # SimpleGeneticBot([0.8, 0.1, 0,5], name="Bot_D"),
-    # SimpleGeneticBot([0.4, 0.5, 0,1], name="Bot_E"),
-    # SimpleGeneticBot([0.9, 0.1, 0,5], name="Bot_F"),
+    SimpleGeneticBot([0.6, 0.5, 0.2], name="Bot_C"),
+    SimpleGeneticBot([0.6, 0.7, 0.2], name="Bot_G"),
+    SimpleGeneticBot([0.8, 0.1, 0,5], name="Bot_D"),
+    SimpleGeneticBot([0.4, 0.5, 0,1], name="Bot_E"),
+    SimpleGeneticBot([0.9, 0.1, 0,5], name="Bot_F"),
 ]
 sim = 0 
 while(len(players) > 1 and sim <= 50):
@@ -78,7 +78,7 @@ while(len(players) > 1 and sim <= 50):
         p_hand = p.get_holecards_pokernotation()
         starting_hands_stats[p_hand]['played'] += 1
 
-    print_cards(players)
+    # print_cards(players)
     bet_blind(players, bet, blind)
     pot = bet
     table = []
