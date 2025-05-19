@@ -1,6 +1,7 @@
 from Poker import *
 from Player import *
-
+from simple_bot import *
+from Utils import *
 # card1 = Card("Heart", "A")
 # card2 = Card("Spade", "A")
 # card3 = Card("Heart", "Q")
@@ -45,19 +46,29 @@ n = num_players
 blind = 0
 bet = 10
 player_indx = 3
-
-for i in range(num_simulations):
-    if i % 100 == 0:
-        print(f"game{i}")
+game = 0
+players = [
+    SimpleGeneticBot([1, 0, 0.5], name="Bot_A"),
+    SimpleGeneticBot([0.8, 0.8, 0.3], name="Bot_B"),
+    # SimpleGeneticBot([0.6, 0.5, 0.2], name="Bot_C"),
+    # SimpleGeneticBot([0.6, 0.7, 0.2], name="Bot_G"),
+    # SimpleGeneticBot([0.8, 0.1, 0,5], name="Bot_D"),
+    # SimpleGeneticBot([0.4, 0.5, 0,1], name="Bot_E"),
+    # SimpleGeneticBot([0.9, 0.1, 0,5], name="Bot_F"),
+]
+sim = 0 
+while(len(players) > 1 and sim <= 50):
+    blind = (blind + 1) % len(players)
+    print(f'game{game}')
+    print_stats(players)
+    game += 1
     # define a deck of cards
     play_deck = Deck()
     play_deck.shuffle()
     assert len(play_deck) == 52
 
     # set players
-    players = [Player(f"Player{p}", 100) for p in range(n)]
-    for i in players:
-        i.make_decision(2)
+    
     # deal cards
     for _ in range(2):
         for p in players:
@@ -67,11 +78,12 @@ for i in range(num_simulations):
         p_hand = p.get_holecards_pokernotation()
         starting_hands_stats[p_hand]['played'] += 1
 
+    print_cards(players)
     bet_blind(players, bet, blind)
     pot = bet
-    
+    table = []
 
-    pot, actions = betting_round(players, bet, pot, blind + 1)
+    pot, actions = betting_round(players, bet, pot, table,  blind + 1)
     print(*actions, sep="\n")
 
     play_deck.dealcard() # burn before flop
@@ -81,7 +93,7 @@ for i in range(num_simulations):
     table = flop_cards
     print("Table: ", table)
 
-    pot, actions = betting_round(players, bet, pot, blind + 1)
+    pot, actions = betting_round(players, bet, pot, table,  blind + 1)
     print(*actions, sep="\n")
 
     play_deck.dealcard() # burn before flop
@@ -91,7 +103,7 @@ for i in range(num_simulations):
     table += turn_card
     print("Table: ", table)
 
-    pot, actions = betting_round(players, bet, pot, blind + 1)
+    pot, actions = betting_round(players, bet, pot, table,  blind + 1)
     print(*actions, sep="\n")
 
     play_deck.dealcard() # burn before flop
@@ -100,7 +112,7 @@ for i in range(num_simulations):
     table += river_card
     print("Table: ", table)
 
-    pot, actions = betting_round(players, bet, pot, blind + 1)
+    pot, actions = betting_round(players, bet, pot, table,  blind + 1)
     print(*actions, sep="\n")
     print("Table: ", table)
 
@@ -112,6 +124,7 @@ for i in range(num_simulations):
 
     for p in winning_player(players):
         print (f'Выигрывает: {p.name}')
+        p.stack += pot
         p_hand = p.get_holecards_pokernotation()
         starting_hands_stats[p_hand]['won'] += 1
     
@@ -125,3 +138,7 @@ for i in range(num_simulations):
             row = {"hand": hand}
             row.update(stat)
             w.writerow(row)
+
+    players = [player for player in players if player.stack >= 10]
+    post_game(players)
+    sim+= 1

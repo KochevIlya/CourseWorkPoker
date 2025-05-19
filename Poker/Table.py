@@ -1,7 +1,8 @@
 from Player import Player
+from simple_bot import SimpleGeneticBot
 from .poker_rules import best_hand
 
-def winning_player(players: Player):
+def winning_player(players):
     """
     given a list of players, return the winners who have the best poker hand
     

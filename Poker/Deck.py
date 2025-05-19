@@ -1,4 +1,5 @@
 from .Card import Card
+import time
 import random
 
 class Deck:
@@ -9,6 +10,7 @@ class Deck:
                 self._deck.append(Card(s, c))
 
     def shuffle(self):
+        random.seed(time.time())
         for _ in range(random.randint(1, 5)):
             random.shuffle(self._deck)
 

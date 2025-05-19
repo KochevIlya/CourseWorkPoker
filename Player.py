@@ -4,16 +4,17 @@ from itertools import combinations
 
 
 class Player:
-    def __init__(self, name, stack):
+    def __init__(self, name="Player", stack=300, min_bet=10):
+        self.min_bet = min_bet
         self.name = str(name)
         self._holeCards = []
         self._bestHand = None
         self.stack = stack
         self.in_hand = True
-        self.in_game = True
         self.bet = 0
         self.desicion = ""
         self.acted_this_round = False
+        self.game_bet = 0
 
 
 
@@ -27,7 +28,7 @@ class Player:
         return str(self)
 
     def ask_player(self):
-        print(f'Ваши карты: {self._holeCards}, вы поставили {self.bet}')
+        print(f'Ваши карты: {self._holeCards}, вы поставили {self.game_bet}')
         desicion = int(input())
         self.make_decision(desicion)
 

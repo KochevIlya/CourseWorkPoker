@@ -14,3 +14,4 @@ def create_stats_dict(starting_hands_stats, stats_dict):
     suited_hands = [b+a+'s' for a,b in combos]  # 78 suited two card combinations
     offsuite_hands = [b+a+'o' for a,b in combos]  # any two offsuite cards
     starting_hands_stats.update({k: stats_dict.copy() for k in pocket_pairs + suited_hands + offsuite_hands})
+

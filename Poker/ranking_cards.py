@@ -14,7 +14,7 @@ def poker_strength(hero_cards, board_cards, iters=5000, seed=42):
     VALUE_MAP.update({'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14})
 
     def create_deck():
-        return [Card(value, suite) for value in Card.static_cardvalues for suite in Card.static_suites]
+        return [Card(suite, value) for value in Card.static_cardvalues for suite in Card.static_suites]
 
     def hand_rank(hand):
         ranks = sorted([VALUE_MAP[c.value] for c in hand], reverse=True)

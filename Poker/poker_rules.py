@@ -16,6 +16,15 @@ category_funcs = (is_royal_flush,
 
 category_func_dict = dict(zip(hand_categories, category_funcs))
 
+def post_game(players):
+    for player in players:
+        player.in_hand = True
+        player._holeCards = []
+        player._bestHand = None
+        player.bet = 0
+        player.desicion = ""
+        player.acted_this_round = False
+        player.game_bet = 0
 
 def best_hand(lst_hands):
     """
@@ -41,7 +50,6 @@ def best_hand(lst_hands):
         left = best_hand(lst_hands[:len(lst_hands) // 2])
         right = best_hand(lst_hands[len(lst_hands) // 2:])
         return best_hand([left, right])
-
 
 def compare_hands(hand1, hand2):
     """
@@ -152,7 +160,6 @@ def compare_hands(hand1, hand2):
                     return cmp
             return 0
 
-
 def categorize_hand(hand):
     """
     assign a category to a poker hand
@@ -171,15 +178,14 @@ def categorize_hand(hand):
 
 def bet_blind(players, bet, blind_indx):
     actions = []
-    players[(blind_indx) % len(players)].bet += bet
-    players[(blind_indx) % len(players)].stack -= bet
+    player = players[(blind_indx) % len(players)]
+    player.bet += bet
+    player.stack -= bet
     actions.append(f"{players[(blind_indx) % len(players)].name} Большой блайнд {bet}")
-    players[(blind_indx) % len(players)].acted_this_round = True
-    
+    player.acted_this_round = True
     return actions
 
-
-def betting_round(players, minimum_bet, pot, starting_player_idx=0):
+def betting_round(players, minimum_bet, pot, cards, starting_player_idx=0,):
     """
     players: список объектов Player
     minimum_bet: текущая минимальная ставка (например, большой блайнд)
@@ -190,6 +196,7 @@ def betting_round(players, minimum_bet, pot, starting_player_idx=0):
     actions = []
     last_raiser_idx = None
     num_players = len(players)
+    active_players = len([player for player in players if player.in_hand])
 
     # Сбросить флаг, кто последний повысил
     
@@ -206,6 +213,8 @@ def betting_round(players, minimum_bet, pot, starting_player_idx=0):
 
         # Круг по игрокам, начиная с starting_player_idx
         for offset in range(num_players):
+            if active_players == 1:
+                break
             i = (starting_player_idx + offset) % num_players
             player = players[i]
             if not player.in_hand:
@@ -217,14 +226,17 @@ def betting_round(players, minimum_bet, pot, starting_player_idx=0):
                 continue
 
             # Получаем действие от игрока (бота или человека)
-            action = player.get_desicion()  # Например, 'call', 'raise', 'fold'
-            if offset == 3:
+            if i == 9:
                 player.ask_player()
                 action = player.get_desicion()
+            else:
+                action = player.make_decision(player._holeCards, cards, min_call= current_bet)
+            
 
             if action == 'fold':
                 player.in_hand = False
                 actions.append(f"{player.name} сбрасывает карты")
+                active_players -= 1
             elif action == 'call':
                 to_call = max_bet - player.bet
                 bet = min(to_call, player.stack)
@@ -256,7 +268,9 @@ def betting_round(players, minimum_bet, pot, starting_player_idx=0):
             break
 
     # Сбросить bet для игроков, чтобы подготовиться к новой улице
+
     for p in players:
+        p.game_bet += p.bet
         p.bet = 0
 
     for p in players:
