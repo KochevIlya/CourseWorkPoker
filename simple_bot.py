@@ -7,7 +7,7 @@ class SimpleGeneticBot:
 
     
 
-    def __init__(self, genome, stack=300, name="Bot", min_bet=10):
+    def __init__(self, genome, stack=100, name="Bot", min_bet=10):
         # genome = [вес силы руки, вес блефа]
         self.name = str(name)
         self._holeCards = []

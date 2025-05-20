@@ -4,7 +4,7 @@ from itertools import combinations
 
 
 class Player:
-    def __init__(self, name="Player", stack=300, min_bet=10):
+    def __init__(self, name="Player", stack=100, min_bet=10):
         self.min_bet = min_bet
         self.name = str(name)
         self._holeCards = []

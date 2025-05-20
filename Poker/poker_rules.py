@@ -36,6 +36,7 @@ def best_hand(lst_hands):
     :rtype: list[Card]
     """
     if len(lst_hands) < 2:
+        
         return lst_hands[0]
     elif len(lst_hands) == 2:
         match compare_hands(lst_hands[0], lst_hands[1]):
@@ -195,82 +196,89 @@ def betting_round(players, minimum_bet, pot, cards, starting_player_idx=0,):
     """
     current_bet = minimum_bet
     actions = []
-    last_raiser_idx = None
     num_players = len(players)
     active_players = len([player for player in players if player.in_hand])
 
     # Сбросить флаг, кто последний повысил
     
     out_stack = 0
+    acted_count = 1
     while True:
-        if active_players - out_stack == 1:
+        if active_players - out_stack <= 1:
             break
         
         all_bets = [p.bet for p in players if p.in_hand]
         max_bet = max(all_bets) if all_bets else 0
 
-        acted_count = 0  # Сколько игроков подряд уже уравняли ставку или ушли
+          # Сколько игроков подряд уже уравняли ставку или ушли
 
         # Круг по игрокам, начиная с starting_player_idx
         for offset in range(num_players):
             print(actions)
-            
+            if acted_count == len(players):
+                acted_count = 1
+                break
+
             if active_players - out_stack == 1:
                 break
             
             i = (starting_player_idx + offset) % num_players
             player = players[i]
-            
+            acted_count += 1
             if not player.in_hand:
                 continue
 
-            # Если игрок уже сравнял ставку и не было последнего рейза, он может пропускать
-            if player.bet == max_bet and player.acted_this_round:
-                acted_count += 1
-                continue
 
             # Получаем действие от игрока (бота или человека)
             if i == 9:
                 player.ask_player()
                 action = player.get_desicion()
+            elif player.stack < 10:
+                continue
             else:
                 action = player.make_decision(player._holeCards, cards, min_call= current_bet)
             
 
             if action == 'fold':
-                player.in_hand = False
+                if active_players - out_stack != 1:
+                    player.in_hand = False
                 actions.append(f"{player.name} сбрасывает карты")
                 active_players -= 1
+
             elif action == 'call':
                 to_call = max_bet - player.bet
                 bet = min(to_call, player.stack)
+                if player.stack - bet == 0:
+                    out_stack += 1
                 player.stack -= bet
                 player.bet += bet
                 pot += bet
                 actions.append(f"{player.name} поддерживает (call) {bet}")
-                player.acted_this_round = True
+                
             elif action == 'raise':
                 to_call = max_bet - player.bet
                 bet = min(to_call + RAISE_AMOUNT, player.stack)
+                if player.stack - bet == 0:
+                    out_stack += 1
                 player.stack -= bet
                 player.bet += bet
                 pot += bet
                 current_bet = player.bet
                 max_bet = current_bet
-                last_raiser_idx = i
                 actions.append(f"{player.name} повышает (raise) до {current_bet}")
-                player.acted_this_round = True
+                acted_count = 1
+              
+                
 
-                # После рейза все остальные должны снова действовать!
-                for p in players:
-                    p.acted_this_round = False
-                player.acted_this_round = True
-
-            if player.stack < 10:
-                    out_stack += 1
+            
         # Если acted_count == количеству оставшихся — все сравняли ставки
-        if all(p.bet == max_bet or not p.in_hand for p in players):
+        num_goods = 0
+        for player in players:
+            if player.stack == 0 or player.bet == max_bet or not player.in_hand:
+                num_goods += 1
+        if num_goods == len(players):
             break
+        
 
     # Сбросить bet для игроков, чтобы подготовиться к новой улице
 
