@@ -25,7 +25,7 @@ def run_game_tournament(candidate_bots, reference_bots, num_games=5, stack=100, 
         bot._bestHand = None
         bot.in_hand = True
         # Выбрать случайных 2 эталонных (без пересечений)
-    ref_pair = random.sample(reference_bots, 2)
+    ref_pair = random.sample(reference_bots, 1)
     bots = candidate_bots + [copy.deepcopy(b) for b in ref_pair]
         # --- Здесь вызывается ваша игровая функция ---
     sorted_results = run_full_poker_game(bots, sims=num_sims)
@@ -34,7 +34,8 @@ def run_game_tournament(candidate_bots, reference_bots, num_games=5, stack=100, 
     for bot in sorted_results:
         if bot in candidate_bots:
             results.append( (bot, bot.stack, False) )
-        else:
+    for bot in sorted_results:
+        if bot in reference_bots:
             results.append( (bot, bot.stack, True) )
     return results
 
@@ -47,7 +48,7 @@ def evoluate(num_generations, mutation_rate, mutation_strength, reference_genome
     :return: список из 6 лучших ботов последней популяции
     """
     reference_bots = [SimpleGeneticBot(g, name=f"Ref_{i}") for i, g in enumerate(reference_genomes)]
-    population = [SimpleGeneticBot([random.random(), random.random(), random.random()], name=f"Gen_{i}") for i in range(6)]
+    population = [SimpleGeneticBot([random.random(), random.random(), random.random()], name=f"Gen_{i}") for i in range(7)]
 
     for gen in range(num_generations):
         # Турнир: кандидаты + эталонные
@@ -65,10 +66,10 @@ def evoluate(num_generations, mutation_rate, mutation_strength, reference_genome
                 f.write(f'[ ')
                 for i in bot[0].genome:
                     f.write(f'{i}, ')
-                f.write(f ]'\n')
+                f.write(f"]'\n'")
 
         # Селекция: только неэталонные!
-        bot1, bot2, bot3, bot4, bot5, bot6 = [c[0] for c in candidates[:6]]
+        bot1, bot2, bot3, bot4, bot5, bot6, bot7 = [c[0] for c in candidates[:7]]
         # Лучшие 2 + потомки + мутант лучшего
         next_gen = [
             copy.deepcopy(bot1),
@@ -76,6 +77,7 @@ def evoluate(num_generations, mutation_rate, mutation_strength, reference_genome
             SimpleGeneticBot(mutate(crossover(bot1.genome, bot2.genome), mutation_rate, mutation_strength), name="Child_1"),
             SimpleGeneticBot(mutate(crossover(bot2.genome, bot3.genome), mutation_rate, mutation_strength), name="Child_2"),
             SimpleGeneticBot(mutate(crossover(bot3.genome, bot4.genome), mutation_rate, mutation_strength), name="Child_3"),
+            SimpleGeneticBot(mutate(crossover(bot1.genome, bot3.genome), mutation_rate, mutation_strength), name="Child_4"),
             SimpleGeneticBot(mutate(bot1.genome, mutation_rate, mutation_strength), name="Mutant_1"),
         ]
 
@@ -174,11 +176,13 @@ def run_full_poker_game(players, stack=100, min_bet=10, sims=50):
         #         row = {"hand": hand}
         #         row.update(stat)
         #         w.writerow(row)
-
-        losers.extend([l for l in players if l.stack == 0])
+        for p in players:
+            if p.stack == 0:
+                losers.append(p)  
         players = [player for player in players if player.stack >= 10]
         post_game(players)
         sim+= 1
-    players.sort(key= lambda x: x.stack)
+    players.sort(key= lambda x: x.stack, reverse=True)
+    losers = [l for l in losers[::-1]]
     results = players + losers
     return results
