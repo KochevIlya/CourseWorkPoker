@@ -2,6 +2,7 @@ from Poker import *
 from Player import *
 from simple_bot import *
 from Utils import *
+from genetic import *
 # card1 = Card("Heart", "A")
 # card2 = Card("Spade", "A")
 # card3 = Card("Heart", "Q")
@@ -40,17 +41,16 @@ starting_hands_stats = {}
 hand_stats = {'won': 0, 'played': 0}
 create_stats_dict(starting_hands_stats, hand_stats)
 
-num_simulations = 100
+num_simulations = 1
 for j in range(num_simulations):
     
     num_players = 8
-    n = num_players
     blind = 0
     bet = 10
     player_indx = 3
     game = 0
     players = [
-        SimpleGeneticBot([1, 0, 0.5], name="Bot_A"),
+        SimpleGeneticBot([1.0, 0.0, 0.5], name="Bot_A"),
         SimpleGeneticBot([0.8, 0.8, 0.3], name="Bot_B"),
         SimpleGeneticBot([0.6, 0.5, 0.2], name="Bot_C"),
         SimpleGeneticBot([0.8, 0.1, 0,5], name="Bot_D"),
@@ -58,10 +58,19 @@ for j in range(num_simulations):
         SimpleGeneticBot([0.9, 0.1, 0,5], name="Bot_F"),
         SimpleGeneticBot([0.6, 0.7, 0.2], name="Bot_G"),
     ]
+    reference_genomes = [
+        [1.0, 0.0, 0.5],
+        [0.8, 0.8, 0.3],
+        [0.6, 0.5, 0.2],
+        [0.8, 0.1, 0,5],
+        [0.4, 0.5, 0,1],
+        [0.9, 0.1, 0,5],
+    ]
+
     winers = []
     losers = list()
     sim = 0 
-    
+    evoluate(10, 0.1, 0.1, reference_genomes, sims=20)
     while(len(players) > 1 and sim <= 50):
         blind = (blind + 1) % len(players)
         print(f'game{game}')
