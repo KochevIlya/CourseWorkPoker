@@ -3,43 +3,65 @@ import copy
 from Poker import *
 
 def crossover(g1, g2):
-    """Однородный кроссинговер"""
+   
     return [(a + b) / 2 for a, b in zip(g1, g2)]
 
 def mutate(genome, mutation_rate, mutation_strength):
-    """Мутация генома"""
+    
     return [
         max(0, min(1, g + (random.uniform(-mutation_strength, mutation_strength) if random.random() < mutation_rate else 0)))
         for g in genome
     ]
 
+def fitnes(tuple):
+    
+    bot = tuple[0]
+    total_rate = tuple[3]
+    fold_rate = bot.num_folds / bot.num_played
+    if fold_rate > 0.9:
+        total_rate *= 0.5
+    return total_rate
+
 def run_game_tournament(candidate_bots, reference_bots, num_games=5, stack=100, num_sims=50):
-    """
-    Проводит серию турниров между 6 кандидатами и 2 случайными эталонными ботами.
-    Возвращает список: [(бот, стек, is_reference)]
-    """
-    # Сбросить стеки и карты
+   
+
+
     for bot in candidate_bots + reference_bots:
         bot.stack = stack
         bot._holeCards = []
         bot._bestHand = None
         bot.in_hand = True
-        # Выбрать случайных 2 эталонных (без пересечений)
-    ref_pair = random.sample(reference_bots, 1)
-    bots = candidate_bots + [copy.deepcopy(b) for b in ref_pair]
-        # --- Здесь вызывается ваша игровая функция ---
+    ref_one = random.sample(reference_bots, 1)
+    bots = candidate_bots + [copy.deepcopy(b) for b in ref_one]
+       
     sorted_results = run_full_poker_game(bots, sims=num_sims)
     results = []
-    # Вернуть кандидатов и их стеки
+    
+    i = 0
     for bot in sorted_results:
         if bot in candidate_bots:
-            results.append( (bot, bot.stack, False) )
+            results.append( (bot, bot.stack, False, i) )
+            i += 1
     for bot in sorted_results:
-        if bot in reference_bots:
-            results.append( (bot, bot.stack, True) )
+        if bot not in candidate_bots:
+            results.append( (bot, bot.stack, True, i) )
+            i += 1
     return results
 
-def evoluate(num_generations, mutation_rate, mutation_strength, reference_genomes, sims=50):
+def evoluate(
+        num_generations, mutation_rate, mutation_strength, reference_genomes, sims=50, 
+        places_dict={
+    0 : 7,
+    1 : 7,
+    2 : 6,
+    3 : 6,
+    4 : 5,
+    5 : 4,
+    6 : 3,
+    7 : 3,
+    8 : None
+    }
+             ):
     """
     :param num_generations: число поколений
     :param mutation_rate: вероятность мутации каждого гена
@@ -47,16 +69,18 @@ def evoluate(num_generations, mutation_rate, mutation_strength, reference_genome
     :param reference_genomes: список геномов эталонных ботов (длина 6)
     :return: список из 6 лучших ботов последней популяции
     """
-    reference_bots = [SimpleGeneticBot(g, name=f"Ref_{i}") for i, g in enumerate(reference_genomes)]
-    population = [SimpleGeneticBot([random.random(), random.random(), random.random()], name=f"Gen_{i}") for i in range(7)]
+    reference_bots = [SimpleGeneticBot(g, name=f"Ref_{i}", place=8) for i, g in enumerate(reference_genomes)]
+    population = [SimpleGeneticBot([random.random(), random.random(), random.random()], name=f"Gen_{i}", place=places_dict[i]) for i in range(7)]
 
     for gen in range(num_generations):
-        # Турнир: кандидаты + эталонные
+        
         results = run_game_tournament(population, reference_bots, num_sims=sims)
-        # Оставляем только неэталонных (is_reference == False)
+        
         candidates = [item for item in results if not item[2]]
-        candidates.sort(key=lambda x: x[1], reverse=True)
-        # Проверка: достаточно ли кандидатов для кроссинговера
+        candidates.sort(key=lambda x: fitnes(x))
+
+
+       
         if len(candidates) < 4:
             raise Exception("Too few candidates left for selection/crossover!")
         
@@ -68,19 +92,20 @@ def evoluate(num_generations, mutation_rate, mutation_strength, reference_genome
                     f.write(f'{i}, ')
                 f.write(f"]'\n'")
 
-        # Селекция: только неэталонные!
+        
         bot1, bot2, bot3, bot4, bot5, bot6, bot7 = [c[0] for c in candidates[:7]]
-        # Лучшие 2 + потомки + мутант лучшего
+        
         next_gen = [
             copy.deepcopy(bot1),
             copy.deepcopy(bot2),
             SimpleGeneticBot(mutate(crossover(bot1.genome, bot2.genome), mutation_rate, mutation_strength), name="Child_1"),
             SimpleGeneticBot(mutate(crossover(bot2.genome, bot3.genome), mutation_rate, mutation_strength), name="Child_2"),
             SimpleGeneticBot(mutate(crossover(bot3.genome, bot4.genome), mutation_rate, mutation_strength), name="Child_3"),
-            SimpleGeneticBot(mutate(crossover(bot1.genome, bot3.genome), mutation_rate, mutation_strength), name="Child_4"),
+            SimpleGeneticBot([random.random(), random.random(), random.random()], name=f"Random_{1}"),
             SimpleGeneticBot(mutate(bot1.genome, mutation_rate, mutation_strength), name="Mutant_1"),
         ]
-
+        for i in range(len(next_gen)):
+            next_gen[i].place = places_dict[i]
         population = next_gen
         print(f"Поколение {gen+1}: лучший стек (из кандидатов) = {candidates[0][1]:.1f}, геном: {candidates[0][0].genome}")
     
@@ -98,16 +123,15 @@ def run_full_poker_game(players, stack=100, min_bet=10, sims=50):
     while(len(players) > 1 and sim <= sims):
         blind = (blind + 1) % len(players)
         print(f'game{game}')
+        lprint(f'game{game}\n')
         print_stats(players)
         game += 1
-        # define a deck of cards
+        
         play_deck = Deck()
         play_deck.shuffle()
         assert len(play_deck) == 52
 
-        # set players
         
-        # deal cards
         for _ in range(2):
             for p in players:
                 p.add_card(play_deck.dealcard())
@@ -124,7 +148,7 @@ def run_full_poker_game(players, stack=100, min_bet=10, sims=50):
         pot, actions = betting_round(players, bet, pot, table,  blind + 1)
         print(*actions, sep="\n")
 
-        play_deck.dealcard() # burn before flop
+        play_deck.dealcard() 
         flop_cards = [play_deck.dealcard() for _ in range(3)]
         # print("Flop:", flop_cards)
         # print(players)
@@ -134,7 +158,7 @@ def run_full_poker_game(players, stack=100, min_bet=10, sims=50):
         pot, actions = betting_round(players, bet, pot, table,  blind + 1)
         print(*actions, sep="\n")
 
-        play_deck.dealcard() # burn before flop
+        play_deck.dealcard()
         turn_card = [play_deck.dealcard()]
         # print("Turn:", turn_card)
 
@@ -144,7 +168,7 @@ def run_full_poker_game(players, stack=100, min_bet=10, sims=50):
         pot, actions = betting_round(players, bet, pot, table,  blind + 1)
         print(*actions, sep="\n")
 
-        play_deck.dealcard() # burn before flop
+        play_deck.dealcard() 
         river_card = [play_deck.dealcard()]
         # print("River:", river_card)
         table += river_card
@@ -182,7 +206,6 @@ def run_full_poker_game(players, stack=100, min_bet=10, sims=50):
         players = [player for player in players if player.stack >= 10]
         post_game(players)
         sim+= 1
-    players.sort(key= lambda x: x.stack, reverse=True)
-    losers = [l for l in losers[::-1]]
-    results = players + losers
+    players.sort(key= lambda x: x.stack)
+    results = losers + players
     return results

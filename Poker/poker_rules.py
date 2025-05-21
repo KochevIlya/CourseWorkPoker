@@ -2,7 +2,8 @@ from .poker_hands import *
 from Utils import *
 
 ACTIONS = ['fold', 'call', 'raise']
-RAISE_AMOUNT = 10  # Фиксированная сумма рейза
+RAISE_AMOUNT = 10  
+
 
 category_funcs = (is_royal_flush,
                  is_straight_flush,
@@ -41,14 +42,14 @@ def best_hand(lst_hands):
     elif len(lst_hands) == 2:
         match compare_hands(lst_hands[0], lst_hands[1]):
             case 0:
-                # both hands are tied
+                
                 return lst_hands[0]
             case 1:
                 return lst_hands[0]
             case 2:
                 return lst_hands[1]
     else:
-        # divide list into two sublists and recursively call function on each half list
+        
         left = best_hand(lst_hands[:len(lst_hands) // 2])
         right = best_hand(lst_hands[len(lst_hands) // 2:])
         return best_hand([left, right])
@@ -187,19 +188,24 @@ def bet_blind(players, bet, blind_indx):
     player.acted_this_round = True
     return actions
 
-def betting_round(players, minimum_bet, pot, cards, starting_player_idx=0,):
-    """
-    players: список объектов Player
-    minimum_bet: текущая минимальная ставка (например, большой блайнд)
-    pot: текущий банк
-    starting_player_idx: индекс игрока, с которого начинается круг
-    """
+def betting_round(players, minimum_bet, pot, cards, starting_player_idx=0, places_dict={
+    0 : 7,
+    1 : 7,
+    2 : 6,
+    3 : 6,
+    4 : 5,
+    5 : 4,
+    6 : 3,
+    7 : 3,
+    8 : None
+    }, is_placeble=True):
+    
     current_bet = minimum_bet
     actions = []
     num_players = len(players)
     active_players = len([player for player in players if player.in_hand])
 
-    # Сбросить флаг, кто последний повысил
+    
     
     out_stack = 0
     acted_count = 1
@@ -210,12 +216,12 @@ def betting_round(players, minimum_bet, pot, cards, starting_player_idx=0,):
         all_bets = [p.bet for p in players if p.in_hand]
         max_bet = max(all_bets) if all_bets else 0
 
-          # Сколько игроков подряд уже уравняли ставку или ушли
-
-        # Круг по игрокам, начиная с starting_player_idx
+          
         for offset in range(num_players):
+            if len(actions) >= 1:
+                lprint(actions[-1])
             print(actions)
-            if acted_count == len(players):
+            if acted_count > len(players):
                 acted_count = 1
                 break
 
@@ -229,7 +235,6 @@ def betting_round(players, minimum_bet, pot, cards, starting_player_idx=0,):
                 continue
 
 
-            # Получаем действие от игрока (бота или человека)
             if i == 9:
                 player.ask_player()
                 action = player.get_desicion()
@@ -238,14 +243,9 @@ def betting_round(players, minimum_bet, pot, cards, starting_player_idx=0,):
             else:
                 action = player.make_decision(player._holeCards, cards, min_call= current_bet)
             
-
-            if action == 'fold':
-                if active_players - out_stack != 1:
-                    player.in_hand = False
-                actions.append(f"{player.name} сбрасывает карты")
-                active_players -= 1
-
-            elif action == 'call':
+            if action == 'call':
+                player.num_played += 1
+                player.active_folds = 0
                 to_call = max_bet - player.bet
                 bet = min(to_call, player.stack)
                 if player.stack - bet == 0:
@@ -253,9 +253,11 @@ def betting_round(players, minimum_bet, pot, cards, starting_player_idx=0,):
                 player.stack -= bet
                 player.bet += bet
                 pot += bet
-                actions.append(f"{player.name} поддерживает (call) {bet}")
-                
-            elif action == 'raise':
+                actions.append(f"{player.name}  (call) {bet}, ")
+
+            elif action == 'raise' or (player.active_folds > places_dict[player.place] and is_placeble):
+                player.num_played += 1
+                player.active_folds = 0
                 to_call = max_bet - player.bet
                 bet = min(to_call + RAISE_AMOUNT, player.stack)
                 if player.stack - bet == 0:
@@ -265,22 +267,30 @@ def betting_round(players, minimum_bet, pot, cards, starting_player_idx=0,):
                 pot += bet
                 current_bet = player.bet
                 max_bet = current_bet
-                actions.append(f"{player.name} повышает (raise) до {current_bet}")
+                actions.append(f"{player.name}  (raise): {current_bet}, ")
                 acted_count = 1
-              
-                
 
+            if action == 'fold':
+                player.num_folds += 1
+                player.num_played += 1
+                if active_players - out_stack != 1:
+                    player.in_hand = False
+                actions.append(f"{player.name} fold, ")
+                active_players -= 1
+        lprint("\n")
             
-        # Если acted_count == количеству оставшихся — все сравняли ставки
+                
+            
+            
+            
+        
         num_goods = 0
         for player in players:
             if player.stack == 0 or player.bet == max_bet or not player.in_hand:
                 num_goods += 1
         if num_goods == len(players):
             break
-        
-
-    # Сбросить bet для игроков, чтобы подготовиться к новой улице
+    
 
     for p in players:
         p.game_bet += p.bet
@@ -311,6 +321,9 @@ def ruffle(players, bet, pot, player_indx):
             players[player_indx].make_decision(desicions[desicion])
         beting_pot, actions = betting_round(players, bet, pot)
         pot += beting_pot
+        lprint("-"*40)
+        lprint(*actions, sep ="\n")
+        lprint("-"*40)
         print(*actions, sep ="\n")
         active_players = [p for p in players if p.in_hand]
         bets = [active_players[i].bet for i in range(len(active_players))] 

@@ -1,13 +1,15 @@
 from Poker.poker_rules import *
 from itertools import combinations
-
+from Utils import *
 
 
 class Player:
-    def __init__(self, name="Player", stack=100, min_bet=10):
+    def __init__(self, name="Player", stack=100, min_bet=10, place = 0):
         self.min_bet = min_bet
         self.name = str(name)
         self._holeCards = []
+        self.place = place
+        self.active_folds = 0
         self._bestHand = None
         self.stack = stack
         self.in_hand = True
@@ -15,8 +17,8 @@ class Player:
         self.desicion = ""
         self.acted_this_round = False
         self.game_bet = 0
-
-
+        self.num_folds = 0
+        self.num_played = 0
 
     def __str__(self):
         if not self._bestHand:
@@ -28,15 +30,22 @@ class Player:
         return str(self)
 
     def ask_player(self):
+        lprint(f'Ваши карты: {self._holeCards}, вы поставили {self.game_bet}')
         print(f'Ваши карты: {self._holeCards}, вы поставили {self.game_bet}')
         desicion = int(input())
         self.make_decision(desicion)
 
     def reset_for_new_hand(self):
         self._holeCards = []
+        self.active_folds = 0
+        self._bestHand = None
         self.in_hand = True
         self.bet = 0
         self.desicion = ""
+        self.acted_this_round = False
+        self.game_bet = 0
+        self.num_folds = 0
+        self.num_played = 0
 
     def add_card(self, c):
         if len(self._holeCards) < 2:
@@ -54,14 +63,7 @@ class Player:
 
 
     def update_best_hand(self, table):
-        """
-        return the best 5 card hand possible for player 
-        using a combination of hole cards and community cards
         
-        :param table: list of Cards on the table
-        :return: best possible hand for player
-        :rtype: list[Card]
-        """
         if len(table) < 3:
             raise ValueError("table has insufficient community cards")
         if len(table) >= 3:
@@ -82,14 +84,7 @@ class Player:
         return self.desicion
 
     def get_holecards_pokernotation(self):
-        """
-        return a string representation of the holecards in conventional poker notation
-        e.g. 'AA', 'AKs', 'KQo'
-        :return: two or three character string:
-            each capitalized character represents the value of a card
-            non-pairs are classified as 's' or 'o' where s means suited, and o means offsuite
-        :rtype: string
-        """
+        
         self._holeCards.sort(reverse=True)
         poker_notation = self._holeCards[0].value + self._holeCards[1].value
         if poker_notation[0] == poker_notation[1]:

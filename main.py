@@ -3,45 +3,18 @@ from Player import *
 from simple_bot import *
 from Utils import *
 from genetic import *
-# card1 = Card("Heart", "A")
-# card2 = Card("Spade", "A")
-# card3 = Card("Heart", "Q")
-# card4 = Card("Heart", "J")
-# card5 = Card("Heart", "T")
+import matplotlib.pyplot as plt
+from collections import defaultdict
 
-# _card1 = Card("Heart", "A")
-# _card2 = Card("Spade", "A")
-# _card3 = Card("Heart", "Q")
-# _card4 = Card("Spade", "J")
-# _card5 = Card("Spade", "T")
-
-# _card6 = Card("Diamond", "2")
-# _card7 = Card("Club", "T")
-
-# hand = [card1, card2, card3, card4, card5]
-# hand2 = [_card1, _card2, _card3, _card4, _card5]
-# hands = [hand, hand2]
-
-# player = Player("Ilya")
-# player.add_card(_card6)
-# player.add_card(_card7)
-
-# player.update_best_hand(hand2)
-
-# print(player.get_best_hand())
-# print(player.get_holecards_pokernotation())
-
-
-import csv 
-
-
+open(f"log.txt", "w")
 starting_hands_stats = {}
 
-# dict to track win/loss stats
+
 hand_stats = {'won': 0, 'played': 0}
 create_stats_dict(starting_hands_stats, hand_stats)
-
-num_simulations = 1
+results_stack = []
+results_times = defaultdict(int)
+num_simulations = 100
 for j in range(num_simulations):
     
     num_players = 8
@@ -50,40 +23,52 @@ for j in range(num_simulations):
     player_indx = 3
     game = 0
     players = [
-        SimpleGeneticBot([1.0, 0.0, 0.5], name="Bot_A"),
-        SimpleGeneticBot([0.8, 0.8, 0.3], name="Bot_B"),
-        SimpleGeneticBot([0.6, 0.5, 0.2], name="Bot_C"),
-        SimpleGeneticBot([0.8, 0.1, 0,5], name="Bot_D"),
-        SimpleGeneticBot([0.4, 0.5, 0,1], name="Bot_E"),
-        SimpleGeneticBot([0.9, 0.1, 0,5], name="Bot_F"),
-        SimpleGeneticBot([0.6, 0.7, 0.2], name="Bot_G"),
+    SimpleGeneticBot([0.9, 0.1, 0.2], name="Aggressor"),
+    SimpleGeneticBot([0.2, 0.1, 0.9], name="Tight"),
+    SimpleGeneticBot([0.4, 0.9, 0.4], name="Bluff"),
+    SimpleGeneticBot([0.5, 0.5, 0.5], name="Balanced"),
+    SimpleGeneticBot([0.9, 0.9, 0.2], name="Maniac"),
+    
     ]
+
     reference_genomes = [
         [1.0, 0.0, 0.5],
-        [0.8, 0.8, 0.3],
-        [0.6, 0.5, 0.2],
-        [0.8, 0.1, 0,5],
-        [0.4, 0.5, 0,1],
-        [0.9, 0.1, 0,5],
+        # [0.8, 0.8, 0.3],
+        # [0.6, 0.5, 0.2],
+        # [0.8, 0.1, 0,5],
+        # [0.4, 0.5, 0,1],
+        # [0.9, 0.1, 0,5],
     ]
 
     winers = []
     losers = list()
     sim = 0 
-    evoluate(10, 0.1, 0.1, reference_genomes, sims=20)
+    #best_players = evoluate(100, 0.1, 0.1, reference_genomes, sims=100)
+                            
+    # with open(f"results_bots.txt", 'a', newline='') as f:
+            
+    #         for bot in best_players:
+    #             f.write(f'[ ')
+    #             for i in bot[0].genome:
+    #                 f.write(f'{i}, ')
+    #             f.write(f"]'\n'")
+
+    #players = best_players
+    for i in players: 
+        i.reset_player()
     while(len(players) > 1 and sim <= 50):
         blind = (blind + 1) % len(players)
         print(f'game{game}')
+        lprint(f'game{game}\n')
+        
         print_stats(players)
         game += 1
-        # define a deck of cards
+        
         play_deck = Deck()
         play_deck.shuffle()
         assert len(play_deck) == 52
 
-        # set players
-        
-        # deal cards
+      
         for _ in range(2):
             for p in players:
                 p.add_card(play_deck.dealcard())
@@ -97,37 +82,51 @@ for j in range(num_simulations):
         pot = bet
         table = []
 
-        pot, actions = betting_round(players, bet, pot, table,  blind + 1)
+        pot, actions = betting_round(players, bet, pot, table,  blind + 1, is_placeble=False)
+        inp = "\n".join(actions)
+        lprint(inp, sep="\n")
         print(*actions, sep="\n")
 
-        play_deck.dealcard() # burn before flop
+
+        play_deck.dealcard() 
         flop_cards = [play_deck.dealcard() for _ in range(3)]
         # print("Flop:", flop_cards)
         # print(players)
-        table = flop_cards
+        table += flop_cards
+        inp = "\n".join(actions)
+        lprint(inp, sep="\n")
         print("Table: ", table)
 
-        pot, actions = betting_round(players, bet, pot, table,  blind + 1)
+        pot, actions = betting_round(players, bet, pot, table,  blind + 1, is_placeble=False)
+        inp = "\n".join(actions)
+        lprint(inp, sep="\n")
         print(*actions, sep="\n")
 
-        play_deck.dealcard() # burn before flop
+        play_deck.dealcard()
         turn_card = [play_deck.dealcard()]
         # print("Turn:", turn_card)
 
         table += turn_card
+        lprint("Table: ", table)
         print("Table: ", table)
 
-        pot, actions = betting_round(players, bet, pot, table,  blind + 1)
+        pot, actions = betting_round(players, bet, pot, table,  blind + 1, is_placeble=False)
+        inp = "\n".join(actions)
+        lprint(inp, sep="\n")
         print(*actions, sep="\n")
 
-        play_deck.dealcard() # burn before flop
+        play_deck.dealcard()
         river_card = [play_deck.dealcard()]
         # print("River:", river_card)
         table += river_card
+        lprint("Table: ", table)
         print("Table: ", table)
 
-        pot, actions = betting_round(players, bet, pot, table,  blind + 1)
+        pot, actions = betting_round(players, bet, pot, table,  blind + 1, is_placeble=False)
+        inp = "\n".join(actions)
+        lprint(inp, sep="\n")
         print(*actions, sep="\n")
+        lprint("Table: ", table)
         print("Table: ", table)
 
         for p in players:
@@ -137,6 +136,7 @@ for j in range(num_simulations):
         
 
         for p in winning_player(players):
+            lprint (f'Выигрывает: {p.name}\n')
             print (f'Выигрывает: {p.name}')
             p.stack += pot
             p_hand = p.get_holecards_pokernotation()
@@ -158,12 +158,40 @@ for j in range(num_simulations):
         post_game(players)
         sim+= 1
     
-winers = [p for p in players if p.stack > 0]
-maxim = max(pl.stack for pl in winers)
-winer = ""
-for p in winers:
-    if p.stack == maxim:
-        winer = p.name
+    winers = [p for p in players if p.stack > 0]
+    maxim = max(pl.stack for pl in winers)
+    winer = ""
+    for p in winers:
+        if p.stack == maxim:
+            winer = p.name
+        results_stack.append((p.name, p.stack))
+        results_times[p.name] += 1
 
+names = [name for name, stack in results_stack]
+stacks = [stack for name, stack in results_stack]
 
+plt.figure(figsize=(10, 5))
+plt.bar(names, stacks, color='skyblue')
+plt.xlabel('Боты')
+plt.ylabel('Итоговый стек')
+plt.title('Результаты стратегий ботов после симуляции')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.savefig("strategy_results.png")
+plt.show()
+
+names = list(results_times.keys())
+times = list(results_times.values())
+
+plt.figure(figsize=(10, 5))
+plt.bar(names, times, color='red')
+plt.xlabel('Боты')
+plt.ylabel('Количество выигрышей')
+plt.title('Результаты стратегий ботов по числу выигрышей')
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.tight_layout()
+plt.savefig("strategy_win_times.png")
+plt.show()
+
+lprint(f'Победитель: {winer}\n')
 print(f'Победитель: {winer}')

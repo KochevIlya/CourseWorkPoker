@@ -4,12 +4,9 @@ from collections import Counter
 from .Card import Card
 
 def poker_strength(hero_cards, board_cards, iters=5000, seed=42):
-    """Возвращает вероятность победы (от 0.0 до 1.0) вашей руки против случайного соперника.
-    hero_cards: [Card, Card]
-    board_cards: [Card, ...] (0-5)
-    """
+    
     random.seed(seed)
-    # Вспомогательные структуры
+    
     VALUE_MAP = {str(n): n for n in range(2, 10)}
     VALUE_MAP.update({'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14})
 
@@ -88,12 +85,6 @@ def poker_strength(hero_cards, board_cards, iters=5000, seed=42):
             ties += 1
 
     total = wins + losses + ties
-    # Возвращаем вероятность победы + полничьи
+
     return (wins + ties/2) / total if total else 0.0
 
-# ===== Пример использования (не входит в функцию) =====
-# Ваши карты: Card("5", "Spade"), Card("6", "Spade")
-# Борд: []
-# Пример вызова:
-# prob = poker_strength([Card("5", "Spade"), Card("6", "Spade")], [])
-# print(round(prob, 3))  # Например, 0.22 (22% equity)
