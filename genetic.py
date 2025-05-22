@@ -51,14 +51,14 @@ def run_game_tournament(candidate_bots, reference_bots, num_games=5, stack=100, 
 def evoluate(
         num_generations, mutation_rate, mutation_strength, reference_genomes, sims=50, 
         places_dict={
-    0 : 7,
-    1 : 7,
-    2 : 6,
-    3 : 6,
-    4 : 5,
-    5 : 4,
-    6 : 3,
-    7 : 3,
+    0 : 10,
+    1 : 10,
+    2 : 9,
+    3 : 9,
+    4 : 7,
+    5 : 7,
+    6 : 5,
+    7 : 5,
     8 : None
     }
              ):

@@ -12,7 +12,7 @@ starting_hands_stats = {}
 
 hand_stats = {'won': 0, 'played': 0}
 create_stats_dict(starting_hands_stats, hand_stats)
-results_stack = []
+results_stack = defaultdict(int)
 results_times = defaultdict(int)
 num_simulations = 100
 for j in range(num_simulations):
@@ -32,7 +32,7 @@ for j in range(num_simulations):
     ]
 
     reference_genomes = [
-        [1.0, 0.0, 0.5],
+        [0.9, 0.1, 0.2],
         # [0.8, 0.8, 0.3],
         # [0.6, 0.5, 0.2],
         # [0.8, 0.1, 0,5],
@@ -164,11 +164,11 @@ for j in range(num_simulations):
     for p in winers:
         if p.stack == maxim:
             winer = p.name
-        results_stack.append((p.name, p.stack))
+        results_stack[p.name] += p.stack
         results_times[p.name] += 1
 
-names = [name for name, stack in results_stack]
-stacks = [stack for name, stack in results_stack]
+names = list(results_stack.keys())
+stacks = list(results_stack.values())
 
 plt.figure(figsize=(10, 5))
 plt.bar(names, stacks, color='skyblue')
